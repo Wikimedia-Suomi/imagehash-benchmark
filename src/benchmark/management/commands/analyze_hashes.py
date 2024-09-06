@@ -1,6 +1,6 @@
 # imageapp/management/commands/analyze_hashes.py
 from django.core.management.base import BaseCommand
-from imageapp.models import Image, ScaledImageHash
+from benchmark.models import Image, ScaledImageHash
 from imagehash import hex_to_hash
 
 class Command(BaseCommand):

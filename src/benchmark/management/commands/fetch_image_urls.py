@@ -27,9 +27,9 @@ def phash_custom(image, hash_size=8, highfreq_factor=4, resize_first=False, resa
     import scipy.fftpack
     img_size = hash_size * highfreq_factor
     if resize_first:
-        image = image.resize((img_size, img_size), imagehash.ANTIALIAS).convert('L')
+        image = image.resize((img_size, img_size), resample_mode).convert('L')
     else:
-        image = image.convert('L').resize((img_size, img_size), imagehash.ANTIALIAS)
+        image = image.convert('L').resize((img_size, img_size), resample_mode)
 
     pixels = numpy.asarray(image)
     dct = scipy.fftpack.dct(scipy.fftpack.dct(pixels, axis=0), axis=1)
@@ -41,6 +41,12 @@ def phash_custom(image, hash_size=8, highfreq_factor=4, resize_first=False, resa
 def phash_resize_first(image):
     return phash_custom(image, resize_first=True)
 
+def phash_lanczos(image):
+    return phash_custom(image, resample_mode=PILImage.Resampling.LANCZOS)
+
+def phash_bicubic(image):
+    return phash_custom(image, resample_mode=PILImage.Resampling.BICUBIC)
+
 class Command(BaseCommand):
     help = 'Fetches the URL of image files using Pywikibot FilePage, calculates various hashes, stores images, and stores hashes.'
 
@@ -50,7 +56,7 @@ class Command(BaseCommand):
             nargs='+',
             type=str,
             default=['phash'],
-            help='Specify hash algorithms to use (options: phash, phash_simple, phash_resize_first, ahash, dhash, whash). Default is phash.'
+            help='Specify hash algorithms to use (options: phash, phash_simple, phash_resize_first, phash_bicubic, ahash, dhash, whash). Default is phash.'
         )
 
     def handle(self, *args, **options):
@@ -75,6 +81,7 @@ class Command(BaseCommand):
             'phash': imagehash.phash,
             'phash_simple': imagehash.phash_simple,
             'phash_resize_first': phash_resize_first,
+            'phash_bicubic': phash_bicubic,
             'ahash': imagehash.average_hash,
             'dhash': imagehash.dhash,
             'whash': imagehash.whash
@@ -102,6 +109,7 @@ class Command(BaseCommand):
                     # Check if the file already exists locally
                     if os.path.exists(image_path):
                         self.stdout.write(self.style.SUCCESS(f"Using cached file: {image_filename}"))
+                        continue
                     else:
                         # Fetch the image and store it on the filesystem
                         response = requests.get(image_url, headers=headers)
